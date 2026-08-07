@@ -21,6 +21,13 @@ repositories {
 configurations.all {
   exclude module: 'slf4j-log4j12'
   exclude group: 'javax.servlet'
+  // Hive pulls in log4j-slf4j-impl, which conflicts with Spring Boot's log4j-to-slf4j bridge
+  exclude group: 'org.apache.logging.log4j', module: 'log4j-slf4j-impl'
+  // Old Jetty jars from Hive confuse Spring Boot's embedded Tomcat auto-configuration
+  exclude group: 'org.eclipse.jetty.aggregate', module: 'jetty-all'
+  exclude group: 'org.mortbay.jetty', module: 'jetty'
+  exclude group: 'org.mortbay.jetty', module: 'jetty-util'
+  exclude group: 'org.eclipse.jetty.orbit', module: 'javax.servlet'
 }
 
 dependencies {
@@ -39,4 +46,20 @@ dependencies {
   implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
   // Need to add this to avoid class not found issue while setting up local metastore
   implementation 'com.esotericsoftware.kryo:kryo:2.22'
+}
+
+tasks.named('bootRun') {
+  jvmArgs = [
+    '--add-opens=java.base/java.lang=ALL-UNNAMED',
+    '--add-opens=java.base/java.lang.invoke=ALL-UNNAMED',
+    '--add-opens=java.base/java.lang.reflect=ALL-UNNAMED',
+    '--add-opens=java.base/java.util=ALL-UNNAMED',
+    '--add-opens=java.base/java.io=ALL-UNNAMED',
+    '--add-opens=java.base/java.net=ALL-UNNAMED',
+    '--add-opens=java.base/java.nio=ALL-UNNAMED',
+    '--add-opens=java.base/sun.nio.ch=ALL-UNNAMED'
+  ]
+  systemProperty 'hive.cbo.enable', 'false'
+  systemProperty 'hive.exec.mode.local.auto', 'false'
+  systemProperty 'hive.metastore.disallow.incompatible.col.type.changes', 'false'
 }
